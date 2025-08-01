@@ -11,7 +11,7 @@ data "aws_ami" "amazon_linux_2" {
 }
 
 resource "aws_key_pair" "my_key" {
-    key_name   = "my-key-name"
+    key_name   = "my-key-name-2"
     public_key = file(var.ssh_public_key_path)
 }
 
@@ -168,7 +168,7 @@ resource "aws_instance" "frontend" {
     tags = { Name = "frontend" }
 }
 
-resource "aws_db_subnet_group" "db_subnet_group" {
+resource "aws_db_subnet_group" "db_subnet_group-2" {
   name       = "db-subnet-group"
   subnet_ids = [
     aws_subnet.private_subnet_1.id,
