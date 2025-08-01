@@ -11,9 +11,12 @@ data "aws_ami" "amazon_linux_2" {
 }
 
 resource "aws_key_pair" "my_key" {
-    key_name   = "my-key"
+    key_name   = "my-key-name"
     public_key = file(var.ssh_public_key_path)
 }
+
+
+
 
 resource "aws_vpc" "main_vpc" {
     cidr_block           = "10.0.0.0/16"
@@ -188,6 +191,6 @@ resource "aws_db_instance" "mysql" {
     publicly_accessible     = false
     skip_final_snapshot     = false
     deletion_protection     = true
-    monitoring_interval     = 60
+    monitoring_interval     = 0
     enabled_cloudwatch_logs_exports = ["error", "general", "slowquery", "audit"]
 }
