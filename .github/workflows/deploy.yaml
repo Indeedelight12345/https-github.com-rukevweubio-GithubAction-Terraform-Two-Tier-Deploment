@@ -33,9 +33,15 @@ jobs:
         run: |
           cd terraform
           terraform init 
-          terraform destroy
-          ls -la
-          ls  
+
+     - name: Terraform Init
+       run: terraform init
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
+             
+    
+          
 
       - name: Terraform Init & Apply
         run: |
