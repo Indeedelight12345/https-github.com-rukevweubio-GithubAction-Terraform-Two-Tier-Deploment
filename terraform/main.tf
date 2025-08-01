@@ -56,7 +56,7 @@ resource "aws_route_table_association" "public_assoc" {
 }
 
 resource "aws_eip" "nat_eip" {
-    vpc  = true
+    domain   = "vpc"
     tags = { Name = "nat-eip" }
 }
 
