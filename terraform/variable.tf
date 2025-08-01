@@ -7,7 +7,7 @@ variable "db_password" {
 variable "ssh_public_key_path" {
     description = "The file path to your SSH public key (e.g., ~/.ssh/id_rsa.pub)."
     type        = string
-    default     = "~/.ssh/id_rsa.pub"
+    default     = "/home/codespace/.ssh/id_rsa.pub"
 }
 
 variable "ssh_cidr_block" {
