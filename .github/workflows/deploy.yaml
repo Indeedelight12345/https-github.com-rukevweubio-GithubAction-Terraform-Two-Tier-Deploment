@@ -39,6 +39,9 @@ jobs:
           cd terraform
           terraform destroy -auto-approve
 
+      - name: Wait for AWS resources cleanup
+        run: sleep 120
+
       - name: Terraform Plan and Apply
         run: |
           cd terraform
