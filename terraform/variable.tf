@@ -1,6 +1,6 @@
 variable "db_password" {
     description = "The password for the RDS MySQL database."
-    type        = string
+    default =  "rootPassword123"
     sensitive   = true
 }
 
