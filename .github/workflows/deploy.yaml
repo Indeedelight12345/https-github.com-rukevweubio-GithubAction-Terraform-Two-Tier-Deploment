@@ -29,7 +29,11 @@ jobs:
         with:
           terraform_version: 1.7.5
 
-
+      - name: Terraform Format
+        run: |
+          cd terraform
+          ls -la
+          ls  
 
       - name: Terraform Init & Apply
         run: |
