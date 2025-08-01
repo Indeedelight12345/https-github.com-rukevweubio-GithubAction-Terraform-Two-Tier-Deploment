@@ -32,6 +32,8 @@ jobs:
       - name: Terraform Format
         run: |
           cd terraform
+          terraform init 
+          terraform destroy
           ls -la
           ls  
 
