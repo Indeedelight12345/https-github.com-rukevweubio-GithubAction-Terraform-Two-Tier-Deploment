@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Replace this with your target VPC ID
-VPC_ID="vpc-054c6b8b4f678202e"
+VPC_ID="vpc-09d68d082bdc0b7c9"
 
 echo "Cleaning up resources in VPC: $VPC_ID"
 
