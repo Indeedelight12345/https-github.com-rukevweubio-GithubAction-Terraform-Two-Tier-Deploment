@@ -1,59 +1,44 @@
 ---
-- name: Deploy application
+- name: Set up web server on Amazon Linux EC2
   hosts: all
   become: true
+  gather_facts: yes
+
   tasks:
-    - name: Update the machine
-      apt:
-        update_cache: yes
-        cache_valid_time: 3600
 
-    - name: Install dependencies
-      apt:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - python3
-        - python3-pip
-
-    - name: Install application
-      pip:
-        name: nginx
+    - name: Install NGINX and PHP
+      yum:
+        name:
+          - nginx
+          - php
+          - php-mysqlnd
         state: present
 
-    - name: Start nginx
+    - name: Start and enable NGINX
       service:
         name: nginx
         state: started
-        enabled: true
+        enabled: yes
 
-    - name: Copy index.php file
+    - name: Copy index.php
       copy:
-        src: /ansible/index.php
-        dest: /var/www/html/
+        src: ./index.php
+        dest: /usr/share/nginx/html/index.php
+        mode: '0644'
 
-    - name: Copy submit.php file
+    - name: Copy submit.php
       copy:
-        src: /ansible/submit.php
-        dest: /var/www/html/
+        src: ./submit.php
+        dest: /usr/share/nginx/html/submit.php
+        mode: '0644'
 
-    - name: Debug - Application deployed successfully
-      debug:
-        msg: "Application deployed successfully"
-
-    - name: Wait for nginx to be up
+    - name: Wait for NGINX to be available
       wait_for:
         port: 80
-        delay: 10
-        timeout: 300
+        delay: 5
+        timeout: 120
         state: started
 
-    - name: Debug - Nginx is up and running on port 80
+    - name: Debug - Deployed
       debug:
-        msg: "Nginx is up and running on port 80"
-
-    - name: Ensure nginx is running
-      service:
-        name: nginx
-        state: started
-        enabled: true
+        msg: "NGINX and PHP installed, web files copied"
