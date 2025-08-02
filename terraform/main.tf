@@ -12,7 +12,7 @@ data "aws_ami" "amazon_linux_2" {
 
 resource "aws_key_pair" "my_key" {
     key_name   = "my-key"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = file(var.ssh_public_key_path)
 }
 
 
