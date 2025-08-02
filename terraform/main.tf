@@ -173,7 +173,7 @@ resource "aws_instance" "frontend" {
 }
 
 resource "aws_db_subnet_group" "db_subnet_group" {
-  name       = "db-subnet-group-name-2"
+  name       = "db-subnet-group"
   subnet_ids = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
 
   tags = {
@@ -195,7 +195,7 @@ resource "aws_db_instance" "mysql" {
     vpc_security_group_ids  = [aws_security_group.rds_sg.id]
     publicly_accessible     = false
     skip_final_snapshot     = false
-    deletion_protection     = true
+    deletion_protection     = false
     monitoring_interval     = 0
     enabled_cloudwatch_logs_exports = ["error", "general", "slowquery", "audit"]
 }
