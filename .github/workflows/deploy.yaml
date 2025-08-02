@@ -54,6 +54,9 @@ jobs:
         run: |
           cd terraform
           echo "EC2_IP=$(terraform output -raw public_ip)" >> "$GITHUB_ENV"
+          
+      - name: Get EC2 IP
+        run: echo "EC2_IP=$(terraform output -raw public_ip)" >> "$GITHUB_ENV"
 
       - name: Configure SSH Key
         run: |
