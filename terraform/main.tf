@@ -11,8 +11,12 @@ data "aws_ami" "amazon_linux_2" {
 }
 
 resource "aws_key_pair" "my_key" {
-    key_name   = "my-key"
+    key_name   = "my-key-${random_id.suffix_key.hex}"
     public_key = file(var.ssh_public_key_path)
+}
+
+resource "random_id" "suffix_key" {
+  byte_length = 2
 }
 
 
@@ -173,12 +177,13 @@ resource "aws_instance" "frontend" {
 }
 
 resource "aws_db_subnet_group" "db_subnet_group" {
-  name       = "db-subnet-group"
+  name       = "db-subnet-group-${random_id.suffix.hex}"
   subnet_ids = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+  tags = { Name = "db-subnet-group" }
+}
 
-  tags = {
-    Name = "db-subnet-group"
-  }
+resource "random_id" "suffix" {
+  byte_length = 2
 }
 
 
