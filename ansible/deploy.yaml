@@ -1,0 +1,59 @@
+---
+- name: Deploy application
+  hosts: all
+  become: true
+  tasks:
+    - name: Update the machine
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install dependencies
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - python3
+        - python3-pip
+
+    - name: Install application
+      pip:
+        name: nginx
+        state: present
+
+    - name: Start nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Copy index.php file
+      copy:
+        src: /ansible/index.php
+        dest: /var/www/html/
+
+    - name: Copy submit.php file
+      copy:
+        src: /ansible/submit.php
+        dest: /var/www/html/
+
+    - name: Debug - Application deployed successfully
+      debug:
+        msg: "Application deployed successfully"
+
+    - name: Wait for nginx to be up
+      wait_for:
+        port: 80
+        delay: 10
+        timeout: 300
+        state: started
+
+    - name: Debug - Nginx is up and running on port 80
+      debug:
+        msg: "Nginx is up and running on port 80"
+
+    - name: Ensure nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: true
