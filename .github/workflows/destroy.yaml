@@ -1,27 +1,34 @@
-# name: Terraform Destroy
+name: Ansible Provisioning
 
-# on:
-#   workflow_dispatch:  # This allows manual trigger from GitHub UI
+on:
+  push:
+    branches:
+      - main
+ 
 
-# jobs:
-#   destroy:
-#     runs-on: ubuntu-latest
+jobs:
+  ansible:
+    name: Ansible Deploy Apache + PHP App
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
 
-#     steps:
-#       - name: Checkout repo
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#       - name: Setup Terraform
-#         uses: hashicorp/setup-terraform@v2
-#         with:
-#           terraform_version: 1.5.0
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
 
-#       - name: Terraform Init
-#         run: terraform init
+      - name: Copy SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-#       - name: Terraform Destroy
-#         run: terraform destroy -auto-approve
-#         env:
-#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           AWS_DEFAULT_REGION: us-east-1
+      - name: Ping server
+        run: ansible all -i ../inventory.ini -m ping
+
+      - name: Run Playbook
+        run: ansible-playbook -i ../inventory.ini deploy.yaml
