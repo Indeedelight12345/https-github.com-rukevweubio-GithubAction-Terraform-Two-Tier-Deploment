@@ -55,37 +55,3 @@ jobs:
           fi
           echo "ec2_ip=$IP" >> $GITHUB_OUTPUT
 
-  # ansible:
-  #   name: Ansible Configuration
-  #   runs-on: ubuntu-latest
-  #   needs: deploy
-
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-
-  #     - name: Install Ansible
-  #       run: sudo apt-get update && sudo apt-get install -y ansible
-      
-  #     - name: Install Python dependencies
-  #       run: |
-  #         cd ansible
-  #         ls -la
-  #         pwd
-        
-  #     - name: Copy SSH Key
-  #       run: |
-  #         mkdir -p ~/.ssh
-  #         echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-  #         chmod 600 ~/.ssh/id_rsa
-
-  #     - name: Create Ansible inventory file
-  #       run: |
-  #         echo "[web]" > inventory.ini
-  #         echo "${{ needs.deploy.outputs.EC2_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
-
-  #     - name: Ping EC2 host
-  #       run: ansible all -i inventory.ini -m ping
-
-  #     - name: Run Ansible playbook
-  #       run: ansible-playbook -i inventory.ini deploy.yaml

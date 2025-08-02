@@ -1,34 +1,47 @@
-# name: Ansible Provisioning
+name: Ansible Provisioning
 
-# on:
-#   push:
-#     branches:
-#       - main
- 
+on:
+  push:
+    branches:
+      - main
 
-# jobs:
-#   ansible:
-#     name: Ansible Deploy Apache + PHP App
-#     runs-on: ubuntu-latest
-#     defaults:
-#       run:
-#         working-directory: ansible
+jobs:
+  ansible:
+    name: Ansible Deploy Apache + PHP App
+    runs-on: ubuntu-latest
 
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-#       - name: Install Ansible
-#         run: sudo apt-get update && sudo apt-get install -y ansible
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible
 
-#       - name: Copy SSH Key
-#         run: |
-#           mkdir -p ~/.ssh
-#           echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-#           chmod 600 ~/.ssh/id_rsa
+      - name: Get EC2 Public IP from Terraform output
+        id: get_ec2_ip
+        run: |
+          cd terraform
+          IP=$(terraform output public_ip 2>/dev/null)
+          if [ -z "$IP" ]; then
+            echo "EC2 public IP not found. Exiting."
+            exit 1
+          fi
+          IP=$(echo "$IP" | tr -d '"')
+          echo "ec2_ip=$IP" >> $GITHUB_OUTPUT
 
-#       - name: Ping server
-#         run: ansible all -i ../inventory.ini -m ping
+      - name: Set up Ansible inventory with EC2 IP
+        run: |
+          echo "[web]" > inventory.ini
+          echo "${{ steps.get_ec2_ip.outputs.ec2_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
-#       - name: Run Playbook
-#         run: ansible-playbook -i ../inventory.ini deploy.yaml
+      - name: Copy SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Ping server
+        run: ansible all -i inventory.ini -m ping
+
+      - name: Run Playbook
+        run: ansible-playbook -i inventory.ini destroy.yaml
