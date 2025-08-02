@@ -157,31 +157,27 @@ resource "random_id" "ec2_name_suffix" {
     keepers = {
         name = "ec2-suffix"
     }
-   
-  byte_length = 2
+    byte_length = 2
 }
 
-resource "aws_instance" "frontend" {
-    name                    = "frontend-${random_id.ec2_name_suffix.hex}"
+resource "aws_instance" "frontend.${random_id.ec2_name_suffix.hex}" {
     ami                         = data.aws_ami.amazon_linux_2.id
     instance_type               = "t2.micro"
     subnet_id                   = aws_subnet.public_subnet.id
     vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
-    key_name                     = aws_key_pair.my_key.key_name
-
+    key_name                    = aws_key_pair.my_key.key_name
     associate_public_ip_address = true
 
-    user_data =         <<-EOF
-                        #!/bin/bash
-                        yum update -y
-                        yum install -y httpd php php-mysqlnd mysql
-                        systemctl start httpd
-                        systemctl enable httpd
-                        echo "<h1>Hello from your Apache server!</h1>" > /var/www/html/index.html
-                        EOF
+    user_data = <<-EOF
+                #!/bin/bash
+                yum update -y
+                yum install -y httpd php php-mysqlnd mysql
+                systemctl start httpd
+                systemctl enable httpd
+                echo "<h1>Hello from your Apache server!</h1>" > /var/www/html/index.html
+                EOF
 
-
-    tags = { Name = "frontend" }
+    tags = { Name = "frontend-${random_id.ec2_name_suffix.hex}" }
 }
 
 resource "aws_db_subnet_group" "db_subnet_group" {
