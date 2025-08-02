@@ -170,9 +170,15 @@ resource "aws_instance" "frontend" {
     tags = { Name = "frontend" }
 }
 
-data "aws_db_subnet_group" "db_subnet_group" {
-  name = "db-subnet-group"
+resource "aws_db_subnet_group" "db_subnet_group-name" {
+  name       = "db-subnet-group-name"
+  subnet_ids = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
+
+  tags = {
+    Name = "db-subnet-group"
+  }
 }
+
 
 
 resource "aws_db_instance" "mysql" {
@@ -183,7 +189,7 @@ resource "aws_db_instance" "mysql" {
     #name                    = "mydb"
     username                = "admin"
     password                = var.db_password
-    db_subnet_group_name    = data.aws_db_subnet_group.db_subnet_group.name
+    db_subnet_group_name    = .aws_db_subnet_group.db_subnet_group-name.name
     vpc_security_group_ids  = [aws_security_group.rds_sg.id]
     publicly_accessible     = false
     skip_final_snapshot     = false
