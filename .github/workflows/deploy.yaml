@@ -47,13 +47,16 @@ jobs:
 
       - name: Export EC2 public IP (safe)
         run: |
-          IP=$(terraform output -raw public_ip || echo "")
-          echo "EC2_IP=$IP" >> "$GITHUB_ENV"
-        
-
-      - name: Export EC2 IP
-        run: |
-           echo "EC2_IP=$(terraform output -raw public_ip)" >> "$GITHUB_ENV"
+            cd terraform
+            sleep 30
+            echo "Waiting for EC2 instance to be ready..."
+            IP=$(terraform output -raw public_ip 2>/dev/null || echo "")
+            if [ -z "$IP" ]; then
+              echo "EC2 public IP not found. Exiting."
+              exit 1
+            fi
+            echo "EC2_IP=$IP" >> "$GITHUB_ENV"
+      
         
 
       - name: Save EC2 IP for Ansible
