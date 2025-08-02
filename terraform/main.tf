@@ -10,10 +10,10 @@ data "aws_ami" "amazon_linux_2" {
     }
 }
 
-resource "aws_key_pair" "my_key" {
-    key_name   = "my-key-name-2"
-    public_key = file(var.ssh_public_key_path)
+data "aws_key_pair" "my_key" {
+  key_name = "my-key-name-2"
 }
+
 
 
 
@@ -153,28 +153,25 @@ resource "aws_instance" "frontend" {
     instance_type               = "t2.micro"
     subnet_id                   = aws_subnet.public_subnet.id
     vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
-    key_name                    = aws_key_pair.my_key.key_name
+    key_name                     = data.aws_key_pair.my_key.key_name
+
     associate_public_ip_address = true
 
-    user_data = <<-EOF
-                            #!/bin/bash
-                            apt-get update -y
-                            apt-get install -y apache2 php libapache2-mod-php php-mysql mysql-client
-                            systemctl start apache2
-                            systemctl enable apache2
-                            echo "<h1>Hello from your Apache server!</h1>" > /var/www/html/index.html
-                            EOF
+    user_data =         <<-EOF
+                        #!/bin/bash
+                        yum update -y
+                        yum install -y httpd php php-mysqlnd mysql
+                        systemctl start httpd
+                        systemctl enable httpd
+                        echo "<h1>Hello from your Apache server!</h1>" > /var/www/html/index.html
+                        EOF
+
 
     tags = { Name = "frontend" }
 }
 
-resource "aws_db_subnet_group" "db_subnet_group" {
-  name       = "db-subnet-group"
-  subnet_ids = [
-    aws_subnet.private_subnet_1.id,
-    aws_subnet.private_subnet_2.id
-  ]
-  tags = { Name = "MySQL Subnet Group" }
+data "aws_db_subnet_group" "db_subnet_group" {
+  name = "db-subnet-group"
 }
 
 
@@ -186,7 +183,7 @@ resource "aws_db_instance" "mysql" {
     #name                    = "mydb"
     username                = "admin"
     password                = var.db_password
-    db_subnet_group_name    = aws_db_subnet_group.db_subnet_group.name
+    db_subnet_group_name    = data.aws_db_subnet_group.db_subnet_group.name
     vpc_security_group_ids  = [aws_security_group.rds_sg.id]
     publicly_accessible     = false
     skip_final_snapshot     = false
