@@ -49,12 +49,12 @@ jobs:
         run: |
           IP=$(terraform output -raw public_ip || echo "")
           echo "EC2_IP=$IP" >> "$GITHUB_ENV"
-        working-directory: ./terraform
+        
 
       - name: Export EC2 IP
         run: |
            echo "EC2_IP=$(terraform output -raw public_ip)" >> "$GITHUB_ENV"
-        working-directory: ./terraform
+        
 
       - name: Save EC2 IP for Ansible
         run: |
