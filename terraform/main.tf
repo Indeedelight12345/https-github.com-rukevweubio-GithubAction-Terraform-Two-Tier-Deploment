@@ -23,7 +23,7 @@ data "aws_vpc" "existing_vpc" {
 }
 
 resource "aws_internet_gateway" "igw" {
-    vpc_id = date.aws_vpc.existing_vpc.id
+    vpc_id = data.aws_vpc.existing_vpc.id
 }
 
 resource "aws_subnet" "public_subnet" {
