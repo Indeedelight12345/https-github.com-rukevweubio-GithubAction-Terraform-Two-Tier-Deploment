@@ -10,24 +10,29 @@ data "aws_ami" "amazon_linux_2" {
     }
 }
 
-data "aws_key_pair" "my_key" {
-  key_name = "my-key-name-2"
+resource "aws_key_pair" "my_key" {
+    key_name   = "my-key"
+    public_key = file("~/.ssh/id_rsa.pub")
 }
 
 
 
 
 
-data "aws_vpc" "existing_vpc" {
-  id = "vpc-0302ec48188e5ebd2"
+resource "aws_vpc" "main_vpc" {
+    cidr_block = "10.0.0/16"
+    enable_dns_support = true
+    enable_dns_hostnames = true
+    tags = { Name = "main-vpc" }        
 }
 
 resource "aws_internet_gateway" "igw" {
-    vpc_id = data.aws_vpc.existing_vpc.id
+    vpc_id = aws_vpc.main_vpc.id
+    tags = { Name = "main-igw" }
 }
 
 resource "aws_subnet" "public_subnet" {
-    vpc_id                  = data.aws_vpc.existing_vpc.id
+    vpc_id                  =   aws_vpc.main_vpc.id
     cidr_block              = "10.0.1.0/24"
     map_public_ip_on_launch = true
     availability_zone       = "us-east-1a"
@@ -35,7 +40,7 @@ resource "aws_subnet" "public_subnet" {
 }
 
 resource "aws_subnet" "private_subnet_1" {
-  vpc_id            = data.aws_vpc.existing_vpc.id
+  vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = "10.0.2.0/24"
   availability_zone = "us-east-1a"
   tags = {
@@ -44,7 +49,7 @@ resource "aws_subnet" "private_subnet_1" {
 }
 
 resource "aws_subnet" "private_subnet_2" {
-  vpc_id            = data.aws_vpc.existing_vpc.id
+  vpc_id            = aws_vpc.main_vpc.id
   cidr_block        = "10.0.3.0/24"
   availability_zone = "us-east-1b"
   tags = {
@@ -54,7 +59,7 @@ resource "aws_subnet" "private_subnet_2" {
 
 
 resource "aws_route_table" "public_rt" {
-    vpc_id = data.aws_vpc.existing_vpc.id
+    vpc_id = aws_vpc.main_vpc.id
     route {
         cidr_block = "0.0.0.0/0"
         gateway_id = aws_internet_gateway.igw.id
@@ -79,7 +84,7 @@ resource "aws_nat_gateway" "nat" {
 }
 
 resource "aws_route_table" "private_rt" {
-    vpc_id = data.aws_vpc.existing_vpc.id
+    vpc_id = aws_vpc.main_vpc.id
     route {
         cidr_block     = "0.0.0.0/0"
         nat_gateway_id = aws_nat_gateway.nat.id
@@ -100,7 +105,7 @@ resource "aws_route_table_association" "private_assoc_2" {
 
 resource "aws_security_group" "frontend_sg" {
     name   = "frontend-sg"
-    vpc_id = data.aws_vpc.existing_vpc.id
+    vpc_id = aws_vpc.main_vpc.id
 
     ingress {
         description = "SSH from trusted IP"
@@ -128,7 +133,7 @@ resource "aws_security_group" "frontend_sg" {
 
 resource "aws_security_group" "rds_sg" {
     name   = "rds-sg"
-    vpc_id = data.aws_vpc.existing_vpc.id
+    vpc_id = aws_vpc.main_vpc.id
 
     ingress {
         from_port       = 3306
@@ -150,7 +155,7 @@ resource "aws_instance" "frontend" {
     instance_type               = "t2.micro"
     subnet_id                   = aws_subnet.public_subnet.id
     vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
-    key_name                     = data.aws_key_pair.my_key.key_name
+    key_name                     = aws_key_pair.my_key.key_name
 
     associate_public_ip_address = true
 
@@ -167,7 +172,7 @@ resource "aws_instance" "frontend" {
     tags = { Name = "frontend" }
 }
 
-resource "aws_db_subnet_group" "db_subnet_group-name-2" {
+resource "aws_db_subnet_group" "db_subnet_group-name" {
   name       = "db-subnet-group-name-2"
   subnet_ids = [aws_subnet.private_subnet_1.id, aws_subnet.private_subnet_2.id]
 
@@ -186,7 +191,7 @@ resource "aws_db_instance" "mysql" {
     #name                    = "mydb"
     username                = "admin"
     password                = var.db_password
-    db_subnet_group_name    = aws_db_subnet_group.db_subnet_group-name-2.name
+    db_subnet_group_name    = aws_db_subnet_group.db_subnet_group-name.name
     vpc_security_group_ids  = [aws_security_group.rds_sg.id]
     publicly_accessible     = false
     skip_final_snapshot     = false
