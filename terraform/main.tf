@@ -153,8 +153,16 @@ resource "aws_security_group" "rds_sg" {
         cidr_blocks = ["0.0.0.0/0"]
     }
 }
+resource "random_id" "ec2_name_suffix" {
+    keepers = {
+        name = "ec2-suffix"
+    }
+   
+  byte_length = 2
+}
 
 resource "aws_instance" "frontend" {
+    name                    = "frontend-${random_id.ec2_name_suffix.hex}"
     ami                         = data.aws_ami.amazon_linux_2.id
     instance_type               = "t2.micro"
     subnet_id                   = aws_subnet.public_subnet.id

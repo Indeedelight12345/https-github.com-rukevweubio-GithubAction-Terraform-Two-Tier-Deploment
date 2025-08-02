@@ -5,64 +5,55 @@ on:
     branches:
       - main
 
-# jobs:
-#   deploy:
-#     name: Terraform + Ansible Deployment
-#     runs-on: ubuntu-latest
+jobs:
+  deploy:
+    name: Terraform Deployment
+    runs-on: ubuntu-latest
 
-#     env:
-#       AWS_REGION: us-east-1
+    env:
+      AWS_REGION: us-east-1
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+    outputs:
+      EC2_IP: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
 
-#       - name: Configure AWS Credentials
-#         uses: aws-actions/configure-aws-credentials@v3
-#         with:
-#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#           aws-region: ${{ env.AWS_REGION }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-#       - name: Set up Terraform
-#         uses: hashicorp/setup-terraform@v3
-#         with:
-#           terraform_version: 1.7.5
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
-#       - name: Terraform Init
-#         run: |
-#           cd terraform
-#           terraform init
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
 
+      - name: Terraform Init
+        run: |
+          cd terraform
+          terraform init
 
-#       - name: Wait for AWS resources cleanup
-#         run: sleep 20
+      - name: Terraform Plan and Apply
+        run: |
+          cd terraform
+          terraform plan -out=tfplan
+          terraform validate  
+          terraform apply -auto-approve tfplan
 
-#       - name: Terraform Plan and Apply
-#         run: |
-#           cd terraform
-#           terraform plan -out=tfplan
-#           terraform validate  
-#           terraform apply -auto-approve tfplan
-
-#       - name: Export EC2 public IP (safe)
-#         run: |
-#             cd terraform
-#             sleep 30
-#             echo "Waiting for EC2 instance to be ready..."
-#             IP=$(terraform output -raw public_ip 2>/dev/null || echo "")
-#             if [ -z "$IP" ]; then
-#               echo "EC2 public IP not found. Exiting."
-#               exit 1
-#             fi
-#             echo "EC2_IP=$IP" >> "$GITHUB_ENV"
-      
-        
-
-#       - name: Save EC2 IP for Ansible
-#         run: |
-#           echo "[web]" > ../inventory.ini
-#           echo "$EC2_IP ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> ../inventory.ini
+      - name: Get EC2 public IP
+        id: get_ec2_ip
+        run: |
+          cd terraform
+          IP=$(terraform output -raw public_ip 2>/dev/null || echo "")
+          if [ -z "$IP" ]; then
+            echo "EC2 public IP not found. Exiting."
+            exit 1
+          fi
+          echo "ec2_ip=$IP" >> $GITHUB_OUTPUT
 
   ansible:
     name: Ansible Configuration
@@ -70,36 +61,31 @@ on:
     needs: deploy
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Install Ansible
         run: sudo apt-get update && sudo apt-get install -y ansible
-
+      
+      - name: Install Python dependencies
+        run: |
+          cd ansible
+          ls -la
+          pwd
+        
       - name: Copy SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-      - name: List repo files
-        run: ls -la
 
-      - name: List files in parent dir
+      - name: Create Ansible inventory file
         run: |
-          ls -la ..
-          cd ansible 
-          ls -la
+          echo "[web]" > inventory.ini
+          echo "${{ needs.deploy.outputs.EC2_IP }} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/id_rsa" >> inventory.ini
 
-      - name: Ping server
-        run: ansible all -i ../inventory.ini -m ping
+      - name: Ping EC2 host
+        run: ansible all -i inventory.ini -m ping
 
-      - name: Run Playbook
-        run: ansible-playbook -i ../inventory.ini deploy.yaml
-    
-  
-      
-
-
-    
-
-      
+      - name: Run Ansible playbook
+        run: ansible-playbook -i inventory.ini deploy.yaml
