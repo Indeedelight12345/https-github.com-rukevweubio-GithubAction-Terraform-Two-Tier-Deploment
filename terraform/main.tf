@@ -1,13 +1,14 @@
 
 
-data "aws_ami" "amazon_linux_2" {
-    most_recent = true
-    owners      = ["amazon"]
 
-    filter {
-        name   = "name"
-        values = ["amzn2-ami-hvm-*-x86_64-gp2"]
-    }
+data "aws_ami" "ubuntu_2204" {
+  most_recent = true
+  owners      = ["099720109477"] 
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
 }
 
 resource "aws_key_pair" "my_key" {
@@ -156,32 +157,48 @@ resource "aws_security_group" "rds_sg" {
 resource "random_id" "ec2_name_suffix" {
   byte_length = 2
   keepers = {
-    # This ensures a new suffix if you want to control when it changes
+    
     always_update = timestamp()
   }
 }
 
 resource "aws_instance" "frontend" {
-  ami                         = data.aws_ami.amazon_linux_2.id
+  ami                         = data.aws_ami.ubuntu_2204.id
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.public_subnet.id
   vpc_security_group_ids      = [aws_security_group.frontend_sg.id]
   key_name                    = aws_key_pair.my_key.key_name
   associate_public_ip_address = true
+
   user_data = <<-EOF
                 #!/bin/bash
-                yum update -y
-                yum install -y httpd php php-mysqlnd mysql
-                systemctl start httpd
-                systemctl enable httpd
-                echo "<h1>Hello from your Apache server!</h1>" > /var/www/html/index.html
-                EOF
+                # Update system
+                apt-get update -y
+                apt-get upgrade -y
 
+                # Install Nginx
+                apt-get install -y nginx
+                systemctl enable nginx
+                systemctl start nginx
+
+                # Install MySQL client
+                apt-get install -y mysql-client
+
+                # Install Node.js 20 via NodeSource
+                curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+                apt-get install -y nodejs
+
+                # Verify installations
+                node -v
+                npm -v
+                systemctl restart nginx
+              EOF
 
   tags = {
     Name = "frontend-${random_id.ec2_name_suffix.hex}"
   }
 }
+
 
 
    

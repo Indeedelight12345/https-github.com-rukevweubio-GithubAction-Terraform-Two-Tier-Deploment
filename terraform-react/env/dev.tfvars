@@ -1,0 +1,10 @@
+backend_bucket      = "my-terraform-state-dev"
+backend_region      = "us-east-1"
+backend_lock_table  = "terraform-lock-prod"
+
+vpc_cidr            = "10.0.0.0/16"
+subnet_cidr         = "10.0.1.0/24"
+availability_zone   = "us-east-1b"
+instance_type       = "t3.medium"
+ssh_public_key_path = "id_rsa.pub"
+ssh_cidr_block      = "0.0.0.0/0"

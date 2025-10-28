@@ -15,3 +15,10 @@ variable "ssh_cidr_block" {
     type        = string
     default     = "0.0.0.0/0"
 }
+
+variable "private_subnet" {
+    description = "the value of teh private subnet "
+    type= string 
+    default = "10.0.3.0/24"
+  
+}
