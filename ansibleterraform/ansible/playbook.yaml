@@ -1,0 +1,37 @@
+---
+- name: Install and configure NGINX web servers
+  hosts: web
+  become: yes
+
+  vars:
+    nginx_web_root: /var/www/html
+    local_index_file: ./index.html  # relative to playbook location
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+
+    - name: Install NGINX
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Ensure NGINX is running and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Copy index.html to NGINX web root
+      ansible.builtin.copy:
+        src: "{{ local_index_file }}"
+        dest: "{{ nginx_web_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Restart NGINX to apply changes
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
