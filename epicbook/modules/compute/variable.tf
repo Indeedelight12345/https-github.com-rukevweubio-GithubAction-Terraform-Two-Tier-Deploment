@@ -18,3 +18,7 @@ variable "sg_id" {
 variable "key_name" {
   type = string
 }
+variable "environment" {
+  description = "Deployment environment (dev or prod)"
+  type        = string
+}

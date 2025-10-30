@@ -6,6 +6,7 @@ resource "random_id" "ec2_name_suffix" {
 }
 
 resource "aws_instance" "frontend" {
+  
   ami                         = var.ami_id
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
@@ -29,6 +30,7 @@ resource "aws_instance" "frontend" {
               EOF
 
   tags = {
-    Name = "frontend-${random_id.ec2_name_suffix.hex}"
-  }
+       Name = "frontend-${var.environment}-${random_id.ec2_name_suffix.hex}"
+  
+}
 }

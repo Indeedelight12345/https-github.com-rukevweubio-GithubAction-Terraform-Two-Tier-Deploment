@@ -44,6 +44,7 @@ module "database" {
 
 module "compute" {
   source        = "./modules/compute"
+  environment         = var.environment
   ami_id        = data.aws_ami.ubuntu_2204.id
   subnet_id     = module.network.public_subnet_id
   sg_id         = module.network.frontend_sg_id
