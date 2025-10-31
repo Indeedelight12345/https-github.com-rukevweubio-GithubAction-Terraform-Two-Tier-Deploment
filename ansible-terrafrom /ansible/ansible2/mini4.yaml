@@ -1,0 +1,48 @@
+---
+- name: Copy the MiniFinance project files from local to NGINX directory
+  hosts: web
+  become: yes
+  gather_facts: yes
+
+  vars:
+    project_directory: "/home/ubior/ansible/mini_finance"
+    final_repo: "/var/www/html"
+
+  tasks:
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure NGINX is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Remove default NGINX web root contents
+      file:
+        path: "{{ final_repo }}"
+        state: absent
+
+    - name: Recreate NGINX web root
+      file:
+        path: "{{ final_repo }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+
+    - name: Copy MiniFinance project to NGINX directory
+      synchronize:
+        src: "{{ project_directory }}/"
+        dest: "{{ final_repo }}/"
+        recursive: yes
+      delegate_to: localhost
+
+    - name: Restart NGINX
+      service:
+        name: nginx
+        state: restarted

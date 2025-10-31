@@ -1,0 +1,31 @@
+
+---
+- name: Clone MiniFinance repo locally
+  hosts: web
+  gather_facts: no
+
+  vars:
+    project_repo: "https://github.com/pravinmishraaws/mini_finance.git"
+    local_repo_path: "/home/ubior/ansible/mini_finance"
+
+  tasks:
+
+    - name: Ensure Git is installed locally
+      apt:
+        name: git
+        state: present
+        update_cache: yes
+      become: yes
+
+    - name: Remove old repo if exists
+      file:
+        path: "{{ local_repo_path }}"
+        state: absent
+
+    - name: Clone MiniFinance repository locally
+      git:
+        repo: "{{ project_repo }}"
+        dest: "{{ local_repo_path }}"
+        force: yes
+        version: main
+        accept_hostkey: yes

@@ -1,0 +1,73 @@
+
+---
+- name: Deploy MiniFinance project from GitHub to NGINX
+  hosts: web
+  become: yes
+  gather_facts: yes
+
+  vars:
+    project_repo: "https://github.com/pravinmishraaws/mini_finance.git"
+    repo_clone_path: "/home/ubior/ansible/files2"
+    project_dest: "/var/www/html/"
+
+  tasks:
+
+    - name: Install NGINX
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Install Git
+      apt:
+        name: git
+        state: present
+
+    - name: Ensure NGINX is running and enabled
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Remove old cloned repo if exists
+      file:
+        path: "{{ repo_clone_path }}"
+        state: absent
+
+    - name: Clone MiniFinance repository
+      git:
+        repo: "{{ project_repo }}"
+        dest: "{{ repo_clone_path }}"
+        force: yes
+        update: yes
+        version: main
+        accept_hostkey: yes
+
+    - name: Copy contents of mini_finance folder to NGINX web root
+      copy:
+        src: "{{ repo_clone_path }}/mini_finance/"
+        dest: "{{ project_dest }}"
+        owner: www-data
+        group: www-data
+        mode: '0755'
+        directory_mode: '0755'
+        recurse: yes
+
+    - name: Restart NGINX
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Verify the site is running
+      uri:
+        url: "http://{{ ansible_host }}/"
+        return_content: yes
+        status_code: 200
+      register: site_status
+      retries: 3
+      delay: 5
+      until: site_status.status == 200
+
+    - name: Show verification result
+      debug:
+        msg: "MiniFinance site is reachable! Content length: {{ site_status.content | length }}"

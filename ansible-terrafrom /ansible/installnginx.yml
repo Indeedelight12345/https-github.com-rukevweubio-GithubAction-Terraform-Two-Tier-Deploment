@@ -1,0 +1,76 @@
+---
+- name: Install and Configure Nginx for EpicBook
+  hosts: web
+  become: yes
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Ensure /home/ubuntu/theepicbook exists
+      file:
+        path: /home/ubuntu/theepicbook
+        state: directory
+        owner: ubuntu
+        group: www-data
+        mode: "0775"
+        recurse: yes
+
+    - name: Add www-data user to ubuntu group
+      user:
+        name: www-data
+        groups: ubuntu
+        append: yes
+
+    - name: Copy site files to /home/ubuntu/theepicbook
+      copy:
+        src: ./theepicbook/      # <-- path on control node
+        dest: /home/ubuntu/theepicbook/
+        owner: ubuntu
+        group: www-data
+        mode: "0775"
+        recurse: yes
+
+    - name: Recursively set permissions on /home/ubuntu/theepicbook
+      file:
+        path: /home/ubuntu/theepicbook
+        owner: ubuntu
+        group: www-data
+        mode: "0775"
+        recurse: yes
+
+    - name: Deploy Nginx site configuration
+      template:
+        src: epicbook.conf.j2
+        dest: /etc/nginx/sites-available/epicbook
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable EpicBook site
+      file:
+        src: /etc/nginx/sites-available/epicbook
+        dest: /etc/nginx/sites-enabled/epicbook
+        state: link
+
+    - name: Remove default site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

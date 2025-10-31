@@ -104,7 +104,7 @@ resource "aws_security_group" "web_sg" {
 
 
 resource "aws_instance" "vm" {
-  count                       = 4
+  count                       = 1
   ami                         = data.aws_ami.ubuntu_2204.id
   instance_type               = var.instance_type
   subnet_id                   = aws_subnet.public.id

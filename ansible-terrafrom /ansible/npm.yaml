@@ -1,0 +1,185 @@
+---
+- name: Deploy EpicBook Stack on EC2
+  hosts: web
+  become: yes
+
+  vars:
+    db_name: bookstore
+    db_user: admin
+    db_password: admindev
+    app_dir: /home/ubuntu/theepicbook
+    node_port: 8080
+
+  tasks:
+
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        state: present
+        update_cache: yes
+
+    - name: Ensure MySQL is running
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: Install Python MySQL library
+      apt:
+        name: python3-pymysql
+        state: present
+        update_cache: yes
+
+
+    - name: Create MySQL database
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+    - name: Create MySQL user
+      mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        priv: "{{ db_name }}.*:ALL"
+        host: "localhost"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+
+
+    ##################################
+    # 2. Install Node.js and npm
+    ##################################
+    - name: Install Node.js and npm
+      apt:
+        name:
+          - nodejs
+          - npm
+        state: present
+        update_cache: yes
+
+    ##################################
+    # 3. Set permissions on app directory
+    ##################################
+    - name: Ensure EpicBook app directory exists and set permissions
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: www-data
+        mode: "0775"
+        recurse: yes
+
+    - name: Add www-data to ubuntu group
+      user:
+        name: www-data
+        groups: ubuntu
+        append: yes
+
+    ##################################
+    # 4. Update config.json with DB credentials
+    ##################################
+    - name: Update config.json with DB credentials
+      copy:
+        dest: "{{ app_dir }}/config/config.json"
+        content: |
+          {
+            "database": {
+              "host": "localhost",
+              "user": "{{ db_user }}",
+              "password": "{{ db_password }}",
+              "database": "{{ db_name }}"
+            },
+            "server": {
+              "port": {{ node_port }}
+            }
+          }
+        owner: ubuntu
+        group: www-data
+        mode: "0644"
+
+    ##################################
+    # 5. Install Nginx and configure
+    ##################################
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Deploy Nginx site configuration
+      template:
+        src: template/epicbook.conf.j2   # your template file path
+        dest: /etc/nginx/sites-available/epicbook
+        owner: root
+        group: root
+        mode: "0644"
+      notify: Reload nginx
+
+    - name: Enable EpicBook site
+      file:
+        src: /etc/nginx/sites-available/epicbook
+        dest: /etc/nginx/sites-enabled/epicbook
+        state: link
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: Reload nginx
+
+    ##################################
+    # 6. Install npm dependencies
+    ##################################
+    - name: Install npm dependencies
+      npm:
+        path: "{{ app_dir }}"
+        production: yes
+      become_user: ubuntu
+
+    ##################################
+    # 7. Start Node.js app in background
+    ##################################
+    - name: Start Node.js app with nohup
+      shell: "nohup node {{ app_dir }}/server.js > {{ app_dir }}/server.log 2>&1 &"
+      args:
+        chdir: "{{ app_dir }}"
+      async: 0
+      poll: 0
+      become_user: ubuntu
+
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded
+  ##################################
+# 4. Load database schema and seed data
+##################################
+    - name: Load bookstore schema
+      mysql_db:
+        name: "{{ db_name }}"
+        state: import
+        target: "{{ app_dir }}/db/BuyTheBook_Schema.sql"
+      become_user: root
+
+    - name: Load author seed data
+      mysql_db:
+        name: "{{ db_name }}"
+        state: import
+        target: "{{ app_dir }}/db/author_seed.sql"
+      become_user: root
+
+    - name: Load books seed data
+      mysql_db:
+        name: "{{ db_name }}"
+        state: import
+        target: "{{ app_dir }}/db/books_seed.sql"
+      become_user: root
+

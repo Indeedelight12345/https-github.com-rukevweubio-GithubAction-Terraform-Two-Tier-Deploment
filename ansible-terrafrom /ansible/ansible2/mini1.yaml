@@ -1,0 +1,46 @@
+---
+- name: Deploy a simple web application on NGINX
+  hosts: web
+  become: yes
+  gather_facts: yes
+
+  tasks:
+
+    - name: Install NGINX on the machine
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure NGINX service is enabled and running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Copy index.html to NGINX directory
+      copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Update the default NGINX config
+      copy:
+        content: |
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+
+              root /var/www/html;
+              index index.html index.htm;
+
+              server_name _;
+          }
+        dest: /etc/nginx/sites-available/default
+
+    - name: Restart NGINX after config update
+      service:
+        name: nginx
+        state: restarted
